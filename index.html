@@ -79,6 +79,8 @@ const getBody=()=>cfg.body||BODY_DEFAULT, getTpl=()=>cfg.tpl||TEMPLATE_DEFAULT, 
 const phoneOf=s=>phones[s.id]??PRESET[s.sr.toLowerCase()]??'';
 const cleanPhone=p=>{let d=(p||'').replace(/\D/g,'');if(d.length===11&&d[0]==='0')d=d.slice(1);return d.length===10?'91'+d:d};
 function message(s){const b=getBody();return personal()?`વ્હાલા વાલીશ્રી *${s.father}*,\nવ્હાલા બાળક *${s.child}* (${s.std} | SR: ${s.sr})\n\n`+b:b}
+async function copyNum(v){const n=(v||'').replace(/\D/g,'').replace(/^0(?=\d{10}$)/,'').replace(/^91(?=\d{10}$)/,'');if(!n){toast('પહેલાં નંબર લખો / No number');return}
+  try{await navigator.clipboard.writeText(n)}catch(e){const x=document.createElement('textarea');x.value=n;document.body.append(x);x.select();try{document.execCommand('copy')}catch(_){}x.remove()}toast('નંબર કોપી થયો: '+n)}
 function toast(t){const e=document.getElementById('toast');e.textContent=t;e.style.display='block';clearTimeout(e._t);e._t=setTimeout(()=>e.style.display='none',2600)}
 /* ---------- sync via Netlify function ---------- */
 let LOGINS=[],pending=0;
@@ -132,7 +134,7 @@ function studentList(arr){
     const on=!!sent[s.id],r=$('div','row'+(on?' sent':'')),w=$('div');const b=$('b','',s.child);w.append(b,$('small','',`Father: ${s.father} · SR ${s.sr}`+(sess.role==='admin'?` · ${s.mandal}`:'')));
     r.append(w,$('span','pill'+(on?' s':''),on?'Sent ✓':'Not sent'));
     const a=$('div','acts'),inp=$('input');inp.type='tel';inp.placeholder='Mobile number';inp.value=phoneOf(s);inp.onchange=()=>{phones[s.id]=inp.value.trim();save([s.mandal]);render()};
-    const pv=$('button','','👁 Preview');pv.onclick=()=>preview(s);a.append(inp,...btns(s),pv);
+    const cn=$('button','','📞 Copy number');cn.onclick=()=>copyNum(inp.value);const pv=$('button','','👁 Preview');pv.onclick=()=>preview(s);a.append(inp,cn,...btns(s),pv);
     if(on){const u=$('button','','Undo');u.onclick=()=>{delete sent[s.id];save([s.mandal]);render()};a.append(u)}
     r.append(a);box.append(r)});
   if(!arr.length)box.append($('p','sync','No students match.'));return box}
@@ -154,7 +156,7 @@ function guide(){const d=$('details','card');d.style.cssText='margin-bottom:14px
   d.ontoggle=()=>{if(!d.open)try{localStorage.setItem('iv_guide','1')}catch(e){}};
   const s=$('summary','','📖 મોકલવાની રીત (સૂચનાઓ) — બધા માટે');s.style.cssText='cursor:pointer;font-weight:700;color:var(--pri)';
   const b=$('div');b.style.cssText='margin-top:10px;line-height:1.7';
-  b.innerHTML=`<b>📱 મોબાઈલમાં (શ્રેષ્ઠ રીત)</b><ol><li>તમારા બાળમંડળના નામથી લોગિન કરો.</li><li>વિદ્યાર્થીના નામ સામે <b>📤 Share card + message</b> બટન દબાવો.</li><li>WhatsApp પસંદ કરી વાલીની ચેટ પસંદ કરો. કાર્ડ અને સંપૂર્ણ મેસેજ સાથે આવશે.</li><li>WhatsApp માં <b>Send</b> દબાવો.</li><li>મોકલ્યા પછી નામ સામે <b>Sent ✓</b> (લીલું) થઈ જશે.</li></ol>
+  b.innerHTML=`<b>📱 મોબાઈલમાં (શ્રેષ્ઠ રીત)</b><ol><li>તમારા બાળમંડળના નામથી લોગિન કરો.</li><li>સૌથી પહેલાં વિદ્યાર્થીના નામ સામે નંબર લખેલા ખાનાની બાજુમાં <b>📞 Copy number</b> દબાવી વાલીનો <b>નંબર કોપી કરો</b>.</li><li>પછી <b>📤 Share card + message</b> બટન દબાવો.</li><li>WhatsApp પસંદ કરો, સર્ચમાં કોપી કરેલો નંબર <b>પેસ્ટ</b> કરી વાલીની ચેટ પસંદ કરો. કાર્ડ અને સંપૂર્ણ મેસેજ સાથે આવશે.</li><li>WhatsApp માં <b>Send</b> દબાવો.</li><li>મોકલ્યા પછી નામ સામે <b>Sent ✓</b> (લીલું) થઈ જશે.</li></ol>
   <b>💻 કોમ્પ્યુટરમાં (WhatsApp Web / Desktop)</b><ol><li><b>📋 Copy</b> દબાવી કાર્ડ કોપી કરો.</li><li><b>💬 Open chat</b> દબાવો — મેસેજ આપોઆપ લખાઈ જશે.</li><li><b>Ctrl+V</b> દબાવી કાર્ડ પેસ્ટ કરો અને <b>Send</b> દબાવો.</li><li>કોપી ન થાય તો <b>⬇ Save</b> થી કાર્ડ ડાઉનલોડ કરી WhatsApp માં જોડો.</li></ol>
   <b>📝 ધ્યાનમાં રાખો</b><ul><li>નંબર ન હોય તો “Mobile number” ખાનામાં ૧૦ અંકનો નંબર લખો.</li><li>WhatsApp જાતે Send કરતું નથી — દરેક વાલી માટે એકવાર <b>Send</b> દબાવવું પડે.</li><li>ભૂલથી Sent થઈ જાય તો <b>Undo</b> દબાવો.</li><li><b>👁 Preview</b> થી કાર્ડ પહેલાં જોઈ શકાય.</li><li><b>Unsent</b> ફિલ્ટર દબાવો — જેમને હજુ મોકલવાનું બાકી છે તેમની યાદી દેખાશે.</li><li>ઈનામ વિતરણના દિવસે વાલીએ આ ડિજિટલ પત્રિકા સાથે લાવવી ફરજિયાત છે.</li></ul>`+(sess.role==='admin'?`<b>👑 એડમિન માટે</b><ul><li><b>Dashboard</b> માં દરેક બાળમંડળનું Sent / Unsent જુઓ; નામ પર દબાવી વિદ્યાર્થીઓની યાદી ખોલો.</li><li><b>Message & Image</b> માં મેસેજ કે કાર્ડની ઈમેજ બદલી <b>Save & apply to all</b> દબાવો — બધા બાળમંડળમાં બદલાઈ જશે.</li><li>ટેક્સ્ટ પસંદ કરી <b>B</b> (bold), <b>I</b> (italic), <b>S</b> (કાપેલું) બટન દબાવો.</li><li><b>Logins</b> ટેબમાં દરેક બાળમંડળનું યુઝરનેમ-પાસવર્ડ મળશે.</li></ul>`:'');
   d.append(s,b);return d}
